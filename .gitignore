@@ -1,0 +1,17 @@
+
+frontend-videoflix
+Videoflix checkiste.pdf
+Videoflix Checkliste.pdf
+.venv/
+frontend-videoflix/.vencd/
+__pycache__/
+*.py[cod]
+*$py.class
+db.sqlite3
+media/
+staticfiles/
+static/
+.env
+*.log
+*.pdf
+rebuild_history.ps1
