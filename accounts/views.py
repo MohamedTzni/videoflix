@@ -1,7 +1,7 @@
 from django.conf import settings
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .serializers import LoginSerializer, RegisterSerializer
@@ -20,6 +20,7 @@ from .utils import get_login_data, get_logout_data
 
 
 @api_view(['POST'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def register_view(request):
     """Creates a new user account and sends an activation email."""
@@ -32,6 +33,7 @@ def register_view(request):
 
 
 @api_view(['GET'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def activate_view(request, uidb64, token):
     """Activates a user account using the uid and token from the activation email."""
@@ -41,6 +43,7 @@ def activate_view(request, uidb64, token):
 
 
 @api_view(['POST'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def login_view(request):
     """Logs the user in and sets JWT tokens as HttpOnly cookies."""
@@ -53,17 +56,22 @@ def login_view(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def logout_view(request):
     """Logs the user out by blacklisting the refresh token and deleting all cookies."""
-    response = Response(get_logout_data())
     refresh_token = request.COOKIES.get(settings.REFRESH_COOKIE_NAME)
-    blacklist_refresh_token(refresh_token)
+    if not refresh_token:
+        return Response({'detail': 'Refresh token missing.'}, status=400)
+    if not blacklist_refresh_token(refresh_token):
+        return Response({'detail': 'Invalid refresh token.'}, status=400)
+    response = Response(get_logout_data())
     delete_token_cookies(response)
     return response
 
 
 @api_view(['POST'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def token_refresh_view(request):
     """Issues a new access token if the refresh token cookie is still valid."""
@@ -79,6 +87,7 @@ def token_refresh_view(request):
 
 
 @api_view(['POST'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def password_reset_view(request):
     """Sends a password reset email if an account with the given email exists."""
@@ -88,6 +97,7 @@ def password_reset_view(request):
 
 
 @api_view(['POST'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def password_confirm_view(request, uidb64, token):
     """Sets a new password using the uid and token from the password reset email."""
