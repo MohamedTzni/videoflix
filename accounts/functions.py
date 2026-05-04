@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
@@ -26,19 +26,26 @@ def build_uid_and_token(user):
     return uid, token
 
 
+def send_email(subject, plain, html, recipient):
+    """Sends an HTML email with plain text fallback via Django's mail backend."""
+    send_mail(
+        subject=subject,
+        message=plain,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[recipient],
+        html_message=html,
+        fail_silently=False,
+    )
+
+
 def send_activation_email(user):
     """Sends a confirmation email with an activation link to the newly registered user."""
     uid, token = build_uid_and_token(user)
     url = build_frontend_url('/pages/auth/activate.html', uid, token)
     user_name = user.first_name or user.email
-    html = render_to_string('accounts/activation_email.html', {
-        'user_name': user_name,
-        'activation_url': url,
-    })
+    html = render_to_string('accounts/activation_email.html', {'user_name': user_name, 'activation_url': url})
     plain = f'Dear {user_name},\n\nActivate your account:\n{url}\n\nBest regards,\nYour Videoflix Team.'
-    msg = EmailMultiAlternatives('Activate your Videoflix account', plain, None, [user.email])
-    msg.attach_alternative(html, 'text/html')
-    msg.send()
+    send_email('Activate your Videoflix account', plain, html, user.email)
     return token
 
 
@@ -48,9 +55,7 @@ def send_password_reset_email(user):
     url = build_frontend_url('/pages/auth/confirm_password.html', uid, token)
     html = render_to_string('accounts/password_reset_email.html', {'reset_url': url})
     plain = f'Hello,\n\nReset your password:\n{url}\n\nThis link is valid for 24 hours.\n\nBest regards,\nYour Videoflix team!'
-    msg = EmailMultiAlternatives('Reset your Videoflix password', plain, None, [user.email])
-    msg.attach_alternative(html, 'text/html')
-    msg.send()
+    send_email('Reset your Videoflix password', plain, html, user.email)
 
 
 def set_token_cookies(response, user):
@@ -58,7 +63,6 @@ def set_token_cookies(response, user):
     refresh = RefreshToken.for_user(user)
     set_cookie(response, settings.ACCESS_COOKIE_NAME, str(refresh.access_token))
     set_cookie(response, settings.REFRESH_COOKIE_NAME, str(refresh))
-    return refresh
 
 
 def set_cookie(response, name, value):
@@ -90,8 +94,11 @@ def activate_user(uidb64, token):
 
 def blacklist_refresh_token(refresh_token):
     """Adds the given refresh token to the blacklist so it can no longer be used."""
-    if refresh_token:
+    try:
         RefreshToken(refresh_token).blacklist()
+    except TokenError:
+        return False
+    return True
 
 
 def refresh_access_token(refresh_token):
