@@ -197,29 +197,279 @@ Backend/
 
 ## API Endpoints
 
-All endpoints are prefixed with `/api/`.
+Alle Endpunkte beginnen mit `/api/`.
 
-### Authentication
+---
 
-| Method | Endpoint | Auth required | Description |
-|---|---|---|---|
-| POST | `/api/register/` | No | Register new user, sends activation email |
-| GET | `/api/activate/<uidb64>/<token>/` | No | Activate account via email link |
-| POST | `/api/login/` | No | Login, sets JWT cookies |
-| POST | `/api/logout/` | Yes | Logout, deletes JWT cookies |
-| POST | `/api/token/refresh/` | No | Refresh access token via cookie |
-| POST | `/api/password_reset/` | No | Send password reset email |
-| POST | `/api/password_confirm/<uidb64>/<token>/` | No | Set new password |
+### Authentifizierung
+
+---
+
+#### `POST /api/register/`
+
+Erstellt ein neues Benutzerkonto und sendet eine Aktivierungs-E-Mail.
+
+**Request Body**
+```json
+{
+  "email": "string",
+  "password": "string (min. 8 Zeichen)",
+  "confirmed_password": "string"
+}
+```
+
+**Success Response** `201 Created`
+```json
+{
+  "user": { "id": 1, "email": "user@example.com" },
+  "token": "string"
+}
+```
+
+**Status Codes**
+- `201` — Benutzer erfolgreich erstellt
+- `400` — Passwörter stimmen nicht überein oder E-Mail bereits registriert
+
+**Permissions:** Keine
+
+---
+
+#### `GET /api/activate/<uidb64>/<token>/`
+
+Aktiviert ein Benutzerkonto anhand der uidb64 und des Tokens aus der Aktivierungs-E-Mail.
+
+**URL Parameter**
+
+| Name | Beschreibung |
+|---|---|
+| `uidb64` | Base64-kodierte User-ID (aus dem E-Mail-Link) |
+| `token` | Aktivierungstoken (aus dem E-Mail-Link) |
+
+**Request Body:** keiner
+
+**Success Response** `200 OK`
+```json
+{ "message": "Account successfully activated." }
+```
+
+**Status Codes**
+- `200` — Konto erfolgreich aktiviert
+- `400` — Token ungültig oder abgelaufen
+
+**Permissions:** Keine
+
+---
+
+#### `POST /api/login/`
+
+Meldet den Benutzer an und setzt JWT-Tokens als HttpOnly-Cookies.
+
+**Request Body**
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+
+**Success Response** `200 OK`
+```json
+{
+  "detail": "Login successful",
+  "user": { "id": 1, "username": "user@example.com" }
+}
+```
+> Setzt `access_token` und `refresh_token` als HttpOnly-Cookies.
+
+**Status Codes**
+- `200` — Login erfolgreich
+- `400` — Ungültige Zugangsdaten oder Konto nicht aktiviert
+
+**Permissions:** Keine
+
+---
+
+#### `POST /api/logout/`
+
+Meldet den Benutzer ab, setzt den Refresh-Token auf die Blacklist und löscht alle Cookies.
+
+**Request Body:** keiner (Refresh-Token wird aus dem Cookie gelesen)
+
+**Success Response** `200 OK`
+```json
+{ "detail": "Logout successful! All tokens will be deleted. Refresh token is now invalid." }
+```
+
+**Status Codes**
+- `200` — Logout erfolgreich
+- `400` — Refresh-Token fehlt oder ungültig
+
+**Permissions:** Keine (Token wird automatisch aus dem Cookie gelesen)
+
+---
+
+#### `POST /api/token/refresh/`
+
+Gibt einen neuen Access-Token aus, wenn das Refresh-Token-Cookie noch gültig ist.
+
+**Request Body:** keiner (Refresh-Token wird aus dem Cookie gelesen)
+
+**Success Response** `200 OK`
+```json
+{
+  "detail": "Token refreshed",
+  "access": "string"
+}
+```
+
+**Status Codes**
+- `200` — Access-Token erfolgreich erneuert
+- `400` — Refresh-Token fehlt
+- `401` — Refresh-Token ungültig oder abgelaufen
+
+**Permissions:** Keine
+
+---
+
+#### `POST /api/password_reset/`
+
+Sendet eine Passwort-Reset-E-Mail, wenn ein Konto mit der angegebenen E-Mail existiert.
+
+**Request Body**
+```json
+{ "email": "string" }
+```
+
+**Success Response** `200 OK`
+```json
+{ "detail": "An email has been sent to reset your password." }
+```
+
+> Gibt immer `200` zurück, auch wenn die E-Mail nicht existiert (Sicherheitsgründe).
+
+**Status Codes**
+- `200` — Anfrage entgegengenommen
+
+**Permissions:** Keine
+
+---
+
+#### `POST /api/password_confirm/<uidb64>/<token>/`
+
+Setzt ein neues Passwort anhand der uidb64 und des Tokens aus der Reset-E-Mail.
+
+**URL Parameter**
+
+| Name | Beschreibung |
+|---|---|
+| `uidb64` | Base64-kodierte User-ID (aus dem E-Mail-Link) |
+| `token` | Reset-Token (aus dem E-Mail-Link) |
+
+**Request Body**
+```json
+{
+  "new_password": "string",
+  "confirm_password": "string"
+}
+```
+
+**Success Response** `200 OK`
+```json
+{ "detail": "string" }
+```
+
+**Status Codes**
+- `200` — Passwort erfolgreich geändert
+- `400` — Token ungültig oder Passwörter stimmen nicht überein
+
+**Permissions:** Keine
+
+---
 
 ### Videos
 
-| Method | Endpoint | Auth required | Description |
-|---|---|---|---|
-| GET | `/api/video/` | Yes | List all videos |
-| GET | `/api/video/<id>/<resolution>/index.m3u8` | Yes | HLS playlist for a resolution |
-| GET | `/api/video/<id>/<resolution>/<segment>/` | Yes | HLS video segment |
+---
 
-**Available resolutions:** `480p`, `720p`, `1080p`
+#### `GET /api/video/`
+
+Gibt eine Liste aller verfügbaren Videos mit Metadaten zurück.
+
+**Request Body:** keiner
+
+**Success Response** `200 OK`
+```json
+[
+  {
+    "id": 1,
+    "created_at": "2026-01-01T00:00:00Z",
+    "title": "string",
+    "description": "string",
+    "thumbnail_url": "string",
+    "category": "string"
+  }
+]
+```
+
+**Status Codes**
+- `200` — Liste erfolgreich zurückgegeben
+- `401` — Nicht authentifiziert
+
+**Permissions:** JWT-Authentifizierung erforderlich
+
+---
+
+#### `GET /api/video/<int:movie_id>/<str:resolution>/index.m3u8`
+
+Gibt die HLS-Master-Playlist für einen bestimmten Film und eine gewählte Auflösung zurück.
+
+**URL Parameter**
+
+| Name | Beschreibung |
+|---|---|
+| `movie_id` | Die ID des Films |
+| `resolution` | Gewünschte Auflösung (`480p`, `720p`, `1080p`) |
+
+**Request Body:** keiner
+
+**Success Response** `200 OK`
+
+HLS-Manifestdatei (`Content-Type: application/vnd.apple.mpegurl`)
+
+**Status Codes**
+- `200` — Manifest erfolgreich geliefert
+- `404` — Video oder Manifest nicht gefunden
+
+**Rate Limits:** Keine
+
+**Permissions:** JWT-Authentifizierung erforderlich
+
+---
+
+#### `GET /api/video/<int:movie_id>/<str:resolution>/<str:segment>/`
+
+Gibt ein einzelnes HLS-Videosegment (`.ts`-Datei) für einen Film und eine Auflösung zurück.
+
+**URL Parameter**
+
+| Name | Beschreibung |
+|---|---|
+| `movie_id` | Die ID des Films |
+| `resolution` | Gewünschte Auflösung (`480p`, `720p`, `1080p`) |
+| `segment` | Segmentname (z.B. `segment0.ts`) |
+
+**Request Body:** keiner
+
+**Success Response** `200 OK`
+
+Videosegment (`Content-Type: video/MP2T`)
+
+**Status Codes**
+- `200` — Segment erfolgreich geliefert
+- `404` — Segment nicht gefunden
+
+**Rate Limits:** Keine
+
+**Permissions:** JWT-Authentifizierung erforderlich
 
 ---
 
