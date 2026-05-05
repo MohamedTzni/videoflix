@@ -4,33 +4,140 @@ A video streaming backend built with Django and Django REST Framework. Supports 
 
 ---
 
-## Quick Start
+## Setup
 
 ### Prerequisites
 
-- **Docker** & **Docker Compose** installed ([Installation](https://docs.docker.com/compose/install/))
+- **Docker Desktop** installed and running ([Installation](https://docs.docker.com/compose/install/))
 - **Git** installed ([Installation](https://git-scm.com/downloads))
 
-### Installation in 3 Steps
+---
 
-1. **Clone repository**
-   ```bash
-   git clone <your-repo-url>
-   cd videoflix
-   ```
+### Step 1 — Clone the repository
 
-2. **Configure environment variables**
-   ```bash
-   cp .env.template .env
-   ```
-   Edit `.env` with your values (see [Configuration](#configuration)).
+```bash
+git clone <your-repo-url>
+cd Backend
+```
 
-3. **Start Docker containers**
-   ```bash
-   docker compose up --build
-   ```
+---
 
-The application runs on [http://localhost:8000](http://localhost:8000)
+### Step 2 — Create the `.env` file
+
+Copy the template file:
+
+```bash
+# Git Bash / macOS / Linux
+cp .env.template .env
+
+# Windows CMD
+copy .env.template .env
+
+# Windows PowerShell
+Copy-Item .env.template .env
+```
+
+Open `.env` and fill in the required values:
+
+```env
+# Django admin superuser (created automatically on first start)
+DJANGO_SUPERUSER_USERNAME=admin
+DJANGO_SUPERUSER_PASSWORD=your_secure_password
+DJANGO_SUPERUSER_EMAIL=your@email.com
+
+# Django secret key — generate one at https://djecrety.ir/
+SECRET_KEY="your-secret-key-here"
+
+# Set to False in production
+DEBUG=True
+
+# Hosts allowed to access the backend
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Frontend URL (for CORS and email links)
+CORS_ALLOWED_ORIGINS=http://localhost:5500,http://127.0.0.1:5500
+CSRF_TRUSTED_ORIGINS=http://localhost:5500,http://127.0.0.1:5500
+FRONTEND_BASE_URL=http://127.0.0.1:5500
+
+# PostgreSQL database
+DB_NAME=videoflix_db
+DB_USER=videoflix_user
+DB_PASSWORD=your_db_password
+DB_HOST=db
+DB_PORT=5432
+
+# Redis (leave as-is when using Docker)
+REDIS_HOST=redis
+REDIS_LOCATION=redis://redis:6379/1
+REDIS_PORT=6379
+REDIS_DB=0
+
+# Email (SMTP) — example for GMX
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=mail.gmx.net
+EMAIL_PORT=587
+EMAIL_HOST_USER=your@gmx.de
+EMAIL_HOST_PASSWORD=your_email_password
+EMAIL_USE_TLS=True
+EMAIL_USE_SSL=False
+DEFAULT_FROM_EMAIL=your@gmx.de
+```
+
+> **Note:** `DB_HOST=db` and `REDIS_HOST=redis` are the Docker service names — do not change these when running with Docker.
+>
+> **Email without SMTP:** To see emails in the terminal logs instead of sending them, set `EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend` in your `.env`.
+
+---
+
+### Step 3 — Start Docker
+
+Build and start all containers (first time or after changes to `requirements.txt` or `Dockerfile`):
+
+```bash
+docker-compose up --build
+```
+
+For subsequent starts (no changes to dependencies):
+
+```bash
+docker-compose up
+```
+
+Docker starts three containers:
+
+| Container | Description |
+|---|---|
+| `videoflix_backend` | Django + Gunicorn + RQ Worker |
+| `videoflix_database` | PostgreSQL |
+| `videoflix_redis` | Redis |
+
+Migrations, static file collection and superuser creation run **automatically** on startup.
+
+---
+
+### Step 4 — Verify
+
+Once you see this line in the logs, the backend is ready:
+
+```
+videoflix_backend | [INFO] Listening at: http://0.0.0.0:8000
+```
+
+- Backend API: [http://localhost:8000/api/](http://localhost:8000/api/)
+- Django Admin: [http://localhost:8000/admin/](http://localhost:8000/admin/)
+- RQ Dashboard: [http://localhost:8000/django-rq/](http://localhost:8000/django-rq/)
+
+Login to the Admin with the credentials from `DJANGO_SUPERUSER_EMAIL` and `DJANGO_SUPERUSER_PASSWORD` in your `.env`.
+
+---
+
+### Stop Docker
+
+```bash
+docker-compose down
+```
+
+> **Important:** Use `docker-compose down` followed by `docker-compose up` (not just `restart`) after changes to `.env`, so the new environment variables are loaded.
 
 ---
 
@@ -70,14 +177,14 @@ Backend/
 │   ├── models.py       # Custom User model (email-based, no username)
 │   ├── views.py        # API endpoints
 │   ├── serializers.py  # Request validation
-│   ├── services.py     # Business logic and email sending
+│   ├── functions.py    # Business logic and email sending
 │   ├── utils.py        # Helper functions
 │   └── templates/      # Email HTML templates
 ├── videos/             # Video management and HLS streaming
 │   ├── models.py       # Video model
 │   ├── views.py        # API endpoints
 │   ├── serializers.py  # Response data
-│   ├── services.py     # File path helpers
+│   ├── functions.py    # File path helpers
 │   ├── tasks.py        # Background FFmpeg conversion
 │   └── utils.py        # Segment name validation
 ├── requirements.txt

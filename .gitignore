@@ -1,7 +1,4 @@
 
-frontend-videoflix
-Videoflix checkiste.pdf
-Videoflix Checkliste.pdf
 .venv/
 frontend-videoflix/.vencd/
 __pycache__/
@@ -13,5 +10,5 @@ staticfiles/
 static/
 .env
 *.log
-*.pdf
-rebuild_history.ps1
+
+
