@@ -17,7 +17,7 @@ A video streaming backend built with Django and Django REST Framework. Supports 
 
 ```bash
 git clone <your-repo-url>
-cd Backend
+cd videoflix-backend
 ```
 
 ---
@@ -197,23 +197,23 @@ Backend/
 
 ## API Endpoints
 
-Alle Endpunkte beginnen mit `/api/`.
+All endpoints are prefixed with `/api/`.
 
 ---
 
-### Authentifizierung
+### Authentication
 
 ---
 
 #### `POST /api/register/`
 
-Erstellt ein neues Benutzerkonto und sendet eine Aktivierungs-E-Mail.
+Creates a new user account and sends an activation email.
 
 **Request Body**
 ```json
 {
   "email": "string",
-  "password": "string (min. 8 Zeichen)",
+  "password": "string (min. 8 characters)",
   "confirmed_password": "string"
 }
 ```
@@ -227,25 +227,31 @@ Erstellt ein neues Benutzerkonto und sendet eine Aktivierungs-E-Mail.
 ```
 
 **Status Codes**
-- `201` — Benutzer erfolgreich erstellt
-- `400` — Passwörter stimmen nicht überein oder E-Mail bereits registriert
+- `201` — User created successfully
+- `400` — Passwords do not match or email already registered
 
-**Permissions:** Keine
+**Permissions:** None
 
 ---
 
 #### `GET /api/activate/<uidb64>/<token>/`
 
-Aktiviert ein Benutzerkonto anhand der uidb64 und des Tokens aus der Aktivierungs-E-Mail.
+Activates a user account using the `uidb64` and `token` from the activation email.
 
-**URL Parameter**
+**URL Parameters**
 
-| Name | Beschreibung |
+| Name | Description |
 |---|---|
-| `uidb64` | Base64-kodierte User-ID (aus dem E-Mail-Link) |
-| `token` | Aktivierungstoken (aus dem E-Mail-Link) |
+| `uidb64` | Base64-encoded user ID — found in the activation email link |
+| `token` | Activation token — found in the activation email link |
 
-**Request Body:** keiner
+> **How to get `uidb64` and `token`:**
+> After calling `POST /api/register/`, an activation email is sent. The email contains a link like:
+> `http://127.0.0.1:5500/pages/auth/activate.html?uid=<uidb64>&token=<token>`
+>
+> To see the email without an SMTP server, set `EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend` in `.env` — the full link will appear in the Docker logs.
+
+**Request Body:** none
 
 **Success Response** `200 OK`
 ```json
@@ -253,16 +259,16 @@ Aktiviert ein Benutzerkonto anhand der uidb64 und des Tokens aus der Aktivierung
 ```
 
 **Status Codes**
-- `200` — Konto erfolgreich aktiviert
-- `400` — Token ungültig oder abgelaufen
+- `200` — Account activated successfully
+- `400` — Token invalid or expired
 
-**Permissions:** Keine
+**Permissions:** None
 
 ---
 
 #### `POST /api/login/`
 
-Meldet den Benutzer an und setzt JWT-Tokens als HttpOnly-Cookies.
+Logs the user in and sets JWT tokens as HttpOnly cookies.
 
 **Request Body**
 ```json
@@ -279,21 +285,21 @@ Meldet den Benutzer an und setzt JWT-Tokens als HttpOnly-Cookies.
   "user": { "id": 1, "username": "user@example.com" }
 }
 ```
-> Setzt `access_token` und `refresh_token` als HttpOnly-Cookies.
+> Sets `access_token` and `refresh_token` as HttpOnly cookies.
 
 **Status Codes**
-- `200` — Login erfolgreich
-- `400` — Ungültige Zugangsdaten oder Konto nicht aktiviert
+- `200` — Login successful
+- `400` — Invalid credentials or account not activated
 
-**Permissions:** Keine
+**Permissions:** None
 
 ---
 
 #### `POST /api/logout/`
 
-Meldet den Benutzer ab, setzt den Refresh-Token auf die Blacklist und löscht alle Cookies.
+Logs the user out by blacklisting the refresh token and deleting all cookies.
 
-**Request Body:** keiner (Refresh-Token wird aus dem Cookie gelesen)
+**Request Body:** none (refresh token is read from the cookie)
 
 **Success Response** `200 OK`
 ```json
@@ -301,18 +307,18 @@ Meldet den Benutzer ab, setzt den Refresh-Token auf die Blacklist und löscht al
 ```
 
 **Status Codes**
-- `200` — Logout erfolgreich
-- `400` — Refresh-Token fehlt oder ungültig
+- `200` — Logout successful
+- `400` — Refresh token missing or invalid
 
-**Permissions:** Keine (Token wird automatisch aus dem Cookie gelesen)
+**Permissions:** None (token is read automatically from the cookie)
 
 ---
 
 #### `POST /api/token/refresh/`
 
-Gibt einen neuen Access-Token aus, wenn das Refresh-Token-Cookie noch gültig ist.
+Issues a new access token if the refresh token cookie is still valid.
 
-**Request Body:** keiner (Refresh-Token wird aus dem Cookie gelesen)
+**Request Body:** none (refresh token is read from the cookie)
 
 **Success Response** `200 OK`
 ```json
@@ -323,17 +329,17 @@ Gibt einen neuen Access-Token aus, wenn das Refresh-Token-Cookie noch gültig is
 ```
 
 **Status Codes**
-- `200` — Access-Token erfolgreich erneuert
-- `400` — Refresh-Token fehlt
-- `401` — Refresh-Token ungültig oder abgelaufen
+- `200` — Access token refreshed successfully
+- `400` — Refresh token missing
+- `401` — Refresh token invalid or expired
 
-**Permissions:** Keine
+**Permissions:** None
 
 ---
 
 #### `POST /api/password_reset/`
 
-Sendet eine Passwort-Reset-E-Mail, wenn ein Konto mit der angegebenen E-Mail existiert.
+Sends a password reset email if an account with the given email exists.
 
 **Request Body**
 ```json
@@ -345,25 +351,25 @@ Sendet eine Passwort-Reset-E-Mail, wenn ein Konto mit der angegebenen E-Mail exi
 { "detail": "An email has been sent to reset your password." }
 ```
 
-> Gibt immer `200` zurück, auch wenn die E-Mail nicht existiert (Sicherheitsgründe).
+> Always returns `200`, even if the email does not exist (security reason).
 
 **Status Codes**
-- `200` — Anfrage entgegengenommen
+- `200` — Request accepted
 
-**Permissions:** Keine
+**Permissions:** None
 
 ---
 
 #### `POST /api/password_confirm/<uidb64>/<token>/`
 
-Setzt ein neues Passwort anhand der uidb64 und des Tokens aus der Reset-E-Mail.
+Sets a new password using the `uidb64` and `token` from the password reset email.
 
-**URL Parameter**
+**URL Parameters**
 
-| Name | Beschreibung |
+| Name | Description |
 |---|---|
-| `uidb64` | Base64-kodierte User-ID (aus dem E-Mail-Link) |
-| `token` | Reset-Token (aus dem E-Mail-Link) |
+| `uidb64` | Base64-encoded user ID — found in the reset email link |
+| `token` | Reset token — found in the reset email link |
 
 **Request Body**
 ```json
@@ -379,10 +385,10 @@ Setzt ein neues Passwort anhand der uidb64 und des Tokens aus der Reset-E-Mail.
 ```
 
 **Status Codes**
-- `200` — Passwort erfolgreich geändert
-- `400` — Token ungültig oder Passwörter stimmen nicht überein
+- `200` — Password changed successfully
+- `400` — Token invalid or passwords do not match
 
-**Permissions:** Keine
+**Permissions:** None
 
 ---
 
@@ -392,9 +398,9 @@ Setzt ein neues Passwort anhand der uidb64 und des Tokens aus der Reset-E-Mail.
 
 #### `GET /api/video/`
 
-Gibt eine Liste aller verfügbaren Videos mit Metadaten zurück.
+Returns a list of all available videos with metadata.
 
-**Request Body:** keiner
+**Request Body:** none
 
 **Success Response** `200 OK`
 ```json
@@ -411,65 +417,65 @@ Gibt eine Liste aller verfügbaren Videos mit Metadaten zurück.
 ```
 
 **Status Codes**
-- `200` — Liste erfolgreich zurückgegeben
-- `401` — Nicht authentifiziert
+- `200` — List returned successfully
+- `401` — Not authenticated
 
-**Permissions:** JWT-Authentifizierung erforderlich
+**Permissions:** JWT authentication required
 
 ---
 
 #### `GET /api/video/<int:movie_id>/<str:resolution>/index.m3u8`
 
-Gibt die HLS-Master-Playlist für einen bestimmten Film und eine gewählte Auflösung zurück.
+Returns the HLS playlist file for a specific video and resolution.
 
-**URL Parameter**
+**URL Parameters**
 
-| Name | Beschreibung |
+| Name | Description |
 |---|---|
-| `movie_id` | Die ID des Films |
-| `resolution` | Gewünschte Auflösung (`480p`, `720p`, `1080p`) |
+| `movie_id` | The ID of the video |
+| `resolution` | Desired resolution (`480p`, `720p`, `1080p`) |
 
-**Request Body:** keiner
+**Request Body:** none
 
 **Success Response** `200 OK`
 
-HLS-Manifestdatei (`Content-Type: application/vnd.apple.mpegurl`)
+HLS manifest file (`Content-Type: application/vnd.apple.mpegurl`)
 
 **Status Codes**
-- `200` — Manifest erfolgreich geliefert
-- `404` — Video oder Manifest nicht gefunden
+- `200` — Manifest returned successfully
+- `404` — Video or manifest not found
 
-**Rate Limits:** Keine
+**Rate Limits:** None
 
-**Permissions:** JWT-Authentifizierung erforderlich
+**Permissions:** JWT authentication required
 
 ---
 
 #### `GET /api/video/<int:movie_id>/<str:resolution>/<str:segment>/`
 
-Gibt ein einzelnes HLS-Videosegment (`.ts`-Datei) für einen Film und eine Auflösung zurück.
+Returns a single HLS video segment (`.ts` file) for a specific video and resolution.
 
-**URL Parameter**
+**URL Parameters**
 
-| Name | Beschreibung |
+| Name | Description |
 |---|---|
-| `movie_id` | Die ID des Films |
-| `resolution` | Gewünschte Auflösung (`480p`, `720p`, `1080p`) |
-| `segment` | Segmentname (z.B. `segment0.ts`) |
+| `movie_id` | The ID of the video |
+| `resolution` | Desired resolution (`480p`, `720p`, `1080p`) |
+| `segment` | Segment filename (e.g. `segment000.ts`) |
 
-**Request Body:** keiner
+**Request Body:** none
 
 **Success Response** `200 OK`
 
-Videosegment (`Content-Type: video/MP2T`)
+Video segment (`Content-Type: video/MP2T`)
 
 **Status Codes**
-- `200` — Segment erfolgreich geliefert
-- `404` — Segment nicht gefunden
+- `200` — Segment returned successfully
+- `404` — Segment not found
 
-**Rate Limits:** Keine
+**Rate Limits:** None
 
-**Permissions:** JWT-Authentifizierung erforderlich
+**Permissions:** JWT authentication required
 
 ---
 
@@ -531,8 +537,8 @@ Credentials from `.env`:
 ### Run Migrations Manually
 
 ```bash
-docker compose exec web python manage.py makemigrations
-docker compose exec web python manage.py migrate
+docker exec videoflix_backend python manage.py makemigrations
+docker exec videoflix_backend python manage.py migrate
 ```
 
 ### Add Python Packages
@@ -573,8 +579,8 @@ ports:
 ### Migration fails after model changes
 
 ```bash
-docker compose exec web python manage.py makemigrations
-docker compose exec web python manage.py migrate
+docker exec videoflix_backend python manage.py makemigrations
+docker exec videoflix_backend python manage.py migrate
 ```
 
 ---
