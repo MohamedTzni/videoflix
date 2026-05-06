@@ -36,6 +36,7 @@ else:
     print(f"Superuser '{email}' already exists.")
 EOF
 
+python manage.py rqworker high &
 python manage.py rqworker default &
 
-exec gunicorn core.wsgi:application --bind 0.0.0.0:8000 --reload
+exec gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120
