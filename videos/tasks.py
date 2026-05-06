@@ -44,6 +44,14 @@ def save_thumbnail(video, thumbnail_path):
     video.save(update_fields=['thumbnail'])
 
 
+def generate_and_save_thumbnail(video_id):
+    """Generates and saves an auto-thumbnail for a video that has no thumbnail."""
+    video = Video.objects.get(pk=video_id)
+    input_path = os.path.join(settings.MEDIA_ROOT, video.video_file.name)
+    thumbnail_path = generate_thumbnail(video_id, input_path)
+    save_thumbnail(video, thumbnail_path)
+
+
 def convert_video_to_hls(video_id):
     """Generates a thumbnail and converts the uploaded video to HLS format in 480p, 720p, and 1080p."""
     video = Video.objects.get(pk=video_id)
