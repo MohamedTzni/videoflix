@@ -24,7 +24,10 @@ def hls_manifest_view(request, movie_id, resolution):
     exists, file_path = hls_file_exists(movie_id, resolution, 'index.m3u8')
     if not exists:
         raise Http404('Manifest not found.')
-    return FileResponse(open(file_path, 'rb'), content_type='application/vnd.apple.mpegurl')
+    try:
+        return FileResponse(open(file_path, 'rb'), content_type='application/vnd.apple.mpegurl')
+    except OSError:
+        raise Http404('Manifest not found.')
 
 
 @api_view(['GET'])
@@ -36,4 +39,7 @@ def hls_segment_view(request, movie_id, resolution, segment):
     exists, file_path = hls_file_exists(movie_id, resolution, segment)
     if not exists:
         raise Http404('Segment not found.')
-    return FileResponse(open(file_path, 'rb'), content_type='video/MP2T')
+    try:
+        return FileResponse(open(file_path, 'rb'), content_type='video/MP2T')
+    except OSError:
+        raise Http404('Segment not found.')
