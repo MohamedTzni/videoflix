@@ -585,6 +585,14 @@ docker exec videoflix_backend python manage.py migrate
 
 ---
 
+## Frontend
+
+The frontend for this project was provided by [DeveloperAkademie](https://developerakademie.com) and forked by Mohamed Touzani for use with this backend.
+
+Frontend repository: [https://github.com/MohamedTzni/project.Videoflix](https://github.com/MohamedTzni/project.Videoflix)
+
+---
+
 ## License
 
 This project is licensed under the MIT License.
