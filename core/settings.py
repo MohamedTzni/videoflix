@@ -214,4 +214,11 @@ RQ_QUEUES = {
         'DEFAULT_TIMEOUT': 900,
         'REDIS_CLIENT_KWARGS': {},
     },
+    'high': {
+        'HOST': os.getenv('REDIS_HOST', 'redis'),
+        'PORT': os.getenv('REDIS_PORT', 6379),
+        'DB': os.getenv('REDIS_DB', 0),
+        'DEFAULT_TIMEOUT': 60,
+        'REDIS_CLIENT_KWARGS': {},
+    },
 }

@@ -53,15 +53,10 @@ def generate_and_save_thumbnail(video_id):
 
 
 def convert_video_to_hls(video_id):
-    """Generates a thumbnail and converts the uploaded video to HLS format in 480p, 720p, and 1080p."""
+    """Converts the uploaded video to HLS format in 480p, 720p, and 1080p."""
     video = Video.objects.get(pk=video_id)
     input_path = os.path.join(settings.MEDIA_ROOT, video.video_file.name)
     base_output = os.path.join(settings.MEDIA_ROOT, 'hls', str(video_id))
-
-    if not video.thumbnail:
-        thumbnail_path = generate_thumbnail(video_id, input_path)
-        save_thumbnail(video, thumbnail_path)
-
     run_ffmpeg_conversion(input_path, os.path.join(base_output, '480p'), 480)
     run_ffmpeg_conversion(input_path, os.path.join(base_output, '720p'), 720)
     run_ffmpeg_conversion(input_path, os.path.join(base_output, '1080p'), 1080)
