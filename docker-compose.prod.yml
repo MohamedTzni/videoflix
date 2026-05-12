@@ -47,6 +47,7 @@ services:
       - certbot_conf:/etc/letsencrypt:ro
       - videoflix_static:/app/static:ro
       - videoflix_media:/app/media:ro
+      - /var/www/frontend:/var/www/frontend:ro
     depends_on:
       - web
     restart: unless-stopped
