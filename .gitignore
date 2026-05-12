@@ -10,5 +10,7 @@ staticfiles/
 static/
 .env
 *.log
+deployment_status.md
+rewrite-history.sh
 
 
