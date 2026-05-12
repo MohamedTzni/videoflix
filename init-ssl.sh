@@ -3,7 +3,7 @@
 set -e
 
 DOMAIN="videoflix.mohamed-touzani.de"
-EMAIL="mohamed.touzani@gmx.de"
+EMAIL="kontakt@mohamed-touzani.de"
 
 echo "==> Step 1: Starting nginx with temporary HTTP-only config..."
 
@@ -27,11 +27,13 @@ server {
 }
 NGINXEOF
 
+chmod +x backend.entrypoint.sh
+
 docker compose -f docker-compose.prod.yml up -d nginx
-sleep 3
+sleep 5
 
 echo "==> Step 2: Requesting SSL certificate from Let's Encrypt..."
-docker compose -f docker-compose.prod.yml run --rm certbot certonly \
+docker compose -f docker-compose.prod.yml run --rm --entrypoint certbot certbot certonly \
     --webroot \
     --webroot-path=/var/www/certbot \
     --email "$EMAIL" \
